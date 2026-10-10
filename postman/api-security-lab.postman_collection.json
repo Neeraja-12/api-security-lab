@@ -1,0 +1,126 @@
+﻿{
+  "info": {
+    "name": "api-security-lab",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:5000" },
+    { "key": "alice_token", "value": "" },
+    { "key": "bob_token", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "Health",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/health"
+      }
+    },
+    {
+      "name": "Login - alice",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "const data = pm.response.json();",
+              "pm.collectionVariables.set('alice_token', data.token);"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\"username\":\"alice\",\"password\":\"alice123\"}"
+        },
+        "url": "{{baseUrl}}/login"
+      }
+    },
+    {
+      "name": "Login - bob",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "const data = pm.response.json();",
+              "pm.collectionVariables.set('bob_token', data.token);"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\"username\":\"bob\",\"password\":\"bob123\"}"
+        },
+        "url": "{{baseUrl}}/login"
+      }
+    },
+    {
+      "name": "BOLA - alice reads bob (should fail on secure branch)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('BOLA check', function () {",
+              "  const body = pm.response.json();",
+              "  pm.expect(body.username).to.not.eql('bob');",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "Authorization", "value": "Bearer {{alice_token}}" }],
+        "url": "{{baseUrl}}/users/2"
+      }
+    },
+    {
+      "name": "Excessive Data Exposure - alice reads herself",
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "Authorization", "value": "Bearer {{alice_token}}" }],
+        "url": "{{baseUrl}}/users/1"
+      }
+    },
+    {
+      "name": "Mass Assignment - alice becomes admin",
+      "request": {
+        "method": "PUT",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{alice_token}}" },
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\"is_admin\":1, \"balance\":999999}"
+        },
+        "url": "{{baseUrl}}/users/1"
+      }
+    },
+    {
+      "name": "Broken Function Level AuthZ - alice hits admin",
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "Authorization", "value": "Bearer {{alice_token}}" }],
+        "url": "{{baseUrl}}/admin/users"
+      }
+    },
+    {
+      "name": "SSRF - fetch cloud metadata",
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "Authorization", "value": "Bearer {{alice_token}}" }],
+        "url": "{{baseUrl}}/fetch?url=http://169.254.169.254/latest/meta-data/"
+      }
+    }
+  ]
+}
