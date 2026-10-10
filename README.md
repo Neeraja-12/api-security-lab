@@ -1,3 +1,10 @@
+## Branch guide
+- `main`   -> intentionally vulnerable version (learning/detection)
+- `secure` -> patched version (all findings remediated)
+
+
+
+
 # API Security Lab (Intentionally Vulnerable)
 
 ⚠️ **WARNING:** This API is intentionally insecure and is meant to be run
